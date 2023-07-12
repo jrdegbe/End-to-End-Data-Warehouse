@@ -1,0 +1,211 @@
+version: '3.8'
+
+services:
+  gooddata-cn-ce:
+    # You can use "dev_latest" tag which points to the latest development version of GD.CN
+    image: gooddata/gooddata-cn-ce:2.3
+    ports:
+      - "3000:3000"
+      - "5432:5432"
+    volumes:
+      - gooddata-data-pipeline:/data
+    environment:
+      LICENSE_AND_PRIVACY_POLICY_ACCEPTED: "YES"
+      APP_LOGLEVEL: "INFO"
+      GDC_FEATURES_VALUES_ENABLE_METRIC_SQL_AND_DATA_EXPLAIN: 'ENABLED'
+      LIMIT_MAX_RESULT_XTAB_DIMENSION: 100000
+
+  bootstrap_origins:
+    image: alpine/curl
+    entrypoint:
+      - /bin/sh
+      - -c
+    command:
+      - |
+        curl -v -H "Authorization: Bearer $GOODDATA_TOKEN" -s -H "Content-Type: application/vnd.gooddata.api+json" -H "Host: localhost" -X PATCH \
+            -d "{
+              \"data\": {
+                \"id\": \"$$GOODDATA_ORGANIZATION\",
+                \"type\": \"organization\",
+                \"attributes\": {
+                  \"allowedOrigins\": [\"https://localhost:8443\"]
+                }
+              }
+            }" \
+          gooddata-cn-ce:3000/api/v1/entities/admin/organizations/$$GOODDATA_ORGANIZATION
+    environment:
+      GOODDATA_TOKEN: YWRtaW46Ym9vdHN0cmFwOmFkbWluMTIz
+      GOODDATA_ORGANIZATION: default
+
+  extract_load_github:
+    build:
+      context: .
+      dockerfile: Dockerfile_meltano
+    entrypoint:
+      - /bin/bash
+      - -c
+    command:
+      - meltano --environment $$MELTANO_ENV run tap-github-repo target-postgres tap-github-org target-postgres
+    environment:
+      POSTGRES_HOST: gooddata-cn-ce
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: demouser
+      POSTGRES_PASS: demopass
+      POSTGRES_DBNAME: demo
+      TARGET_SCHEMA: github_input_stage
+      TAP_GITHUB_AUTH_TOKEN: "$TAP_GITHUB_AUTH_TOKEN"
+      MELTANO_ENV: cicd_dev_local
+      MELTANO_STATE_AWS_ACCESS_KEY_ID: "minio_abcde_k1234567"
+      MELTANO_STATE_AWS_SECRET_ACCESS_KEY: "minio_abcde_k1234567_secret1234567890123"
+      MELTANO_STATE_AWS_BUCKET: "meltano"
+      MELTANO_STATE_AWS_ENDPOINT: "http://minio:9000"
+    volumes:
+      - ./data_pipeline/meltano.yml:/project/meltano.yml
+
+  extract_load_faa:
+    build:
+      context: .
+      dockerfile: Dockerfile_meltano
+    entrypoint:
+      - /bin/bash
+      - -c
+    command:
+      - meltano --environment $$MELTANO_ENV run tap-s3-csv target-postgres
+    environment:
+      POSTGRES_HOST: gooddata-cn-ce
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: demouser
+      POSTGRES_PASS: demopass
+      POSTGRES_DBNAME: demo
+      TARGET_SCHEMA: faa_input_stage
+      MELTANO_ENV: cicd_dev_local
+      MELTANO_STATE_AWS_ACCESS_KEY_ID: "minio_abcde_k1234567"
+      MELTANO_STATE_AWS_SECRET_ACCESS_KEY: "minio_abcde_k1234567_secret1234567890123"
+      MELTANO_STATE_AWS_BUCKET: "meltano"
+      MELTANO_STATE_AWS_ENDPOINT: "http://minio:9000"
+      TAP_S3_CSV_AWS_ACCESS_KEY_ID: "$TAP_S3_CSV_AWS_ACCESS_KEY_ID"
+      TAP_S3_CSV_AWS_SECRET_ACCESS_KEY: "$TAP_S3_CSV_AWS_SECRET_ACCESS_KEY"
+    volumes:
+      - ./data_pipeline/meltano.yml:/project/meltano.yml
+
+  extract_load_exchangeratehost:
+    build:
+      context: .
+      dockerfile: Dockerfile_meltano
+    entrypoint:
+      - /bin/bash
+      - -c
+    command:
+      - meltano --environment $$MELTANO_ENV run tap-exchangeratehost target-postgres
+    environment:
+      POSTGRES_HOST: gooddata-cn-ce
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: demouser
+      POSTGRES_PASS: demopass
+      POSTGRES_DBNAME: demo
+      TARGET_SCHEMA: exchangeratehost_input_stage
+      MELTANO_ENV: cicd_dev_local
+      MELTANO_STATE_AWS_ACCESS_KEY_ID: "minio_abcde_k1234567"
+      MELTANO_STATE_AWS_SECRET_ACCESS_KEY: "minio_abcde_k1234567_secret1234567890123"
+      MELTANO_STATE_AWS_BUCKET: "meltano"
+      MELTANO_STATE_AWS_ENDPOINT: "http://minio:9000"
+    volumes:
+      - ./data_pipeline/meltano.yml:/project/meltano.yml
+
+  transform:
+    build:
+      context: .
+      dockerfile: Dockerfile_dbt
+    entrypoint:
+      - /bin/bash
+      - -c
+    command:
+      - |
+        dbt run --profile default --target $$ELT_ENVIRONMENT
+        dbt test --profile default --target $$ELT_ENVIRONMENT
+        dbt-gooddata deploy_models
+        dbt-gooddata upload_notification
+    environment:
+      POSTGRES_HOST: gooddata-cn-ce
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: demouser
+      POSTGRES_PASS: demopass
+      POSTGRES_DBNAME: demo
+      INPUT_SCHEMA: cicd_input_stage
+      INPUT_SCHEMA_GITHUB: "github_input_stage"
+      INPUT_SCHEMA_FAA: "faa_input_stage"
+      OUTPUT_SCHEMA: cicd_output_stage
+      ELT_ENVIRONMENT: cicd_dev_local
+      GOODDATA_HOST: "http://gooddata-cn-ce:3000"
+      GOODDATA_OVERRIDE_HOST: "localhost"
+    volumes:
+      - ./data_pipeline/macros:/project/macros
+      - ./data_pipeline/models:/project/models
+      - ./data_pipeline/profile/profiles.yml:/root/.dbt/profiles.yml
+      - ./data_pipeline/gooddata.yml:/project/gooddata.yml
+
+  analytics:
+    build:
+      context: .
+      dockerfile: Dockerfile_dbt_gooddata
+    entrypoint:
+      - /bin/bash
+      - -c
+    command:
+      - |
+        dbt-gooddata deploy_analytics
+        dbt-gooddata test_insights
+    environment:
+      GOODDATA_HOST: "http://gooddata-cn-ce:3000"
+      GOODDATA_OVERRIDE_HOST: "localhost"
+    volumes:
+      - ./data_pipeline/gooddata_layouts:/project/gooddata_layouts
+      - ./data_pipeline/gooddata.yml:/project/gooddata.yml
+
+  # Minio serves as AWS S3 state backend for extract_load (Meltano)
+  minio:
+    image: minio/minio:RELEASE.2023-02-27T18-10-45Z
+    volumes:
+      - minio-data:/data
+    ports:
+      - '19000:9000'
+      - '19001:19001'
+    environment:
+      MINIO_ACCESS_KEY: minio_abcde_k1234567
+      MINIO_SECRET_KEY: minio_abcde_k1234567_secret1234567890123
+    command: server --console-address ":19001" /data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  minio-bootstrap:
+    image: minio/mc:RELEASE.2023-02-28T00-12-59Z
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      /usr/bin/mc alias set my_minio http://minio:9000 minio_abcde_k1234567 minio_abcde_k1234567_secret1234567890123;
+      /usr/bin/mc mb my_minio/meltano;
+      /usr/bin/mc policy set public my_minio/meltano;
+      exit 0;
+      "
+
+  vertica:
+    image: vertica/vertica-ce:12.0.4-0
+    environment:
+      APP_DB_USER: "demouser"
+      APP_DB_PASSWORD: "demopass"
+      TZ: "Europe/Prague"
+    ports:
+      - "5433:5433"
+      - "5444:5444"
+    volumes:
+      - vertica-data:/data
+
+
+volumes:
+  gooddata-data-pipeline:
+  minio-data:
+  vertica-data:

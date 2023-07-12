@@ -1,0 +1,38 @@
+content:
+  buckets:
+    - items:
+        - measure:
+            definition:
+              measureDefinition:
+                filters: []
+                item:
+                  identifier:
+                    id: contribution_of_top_25_users_-_merged_pr
+                    type: metric
+            localIdentifier: 5438b99f23ac4e7b85ab7ae1bd85ce2b
+            title: Contribution of TOP 25% users - merged PR
+      localIdentifier: measures
+    - items:
+        - attribute:
+            displayForm:
+              identifier:
+                id: closed_at.month
+                type: label
+            localIdentifier: 8e91666db62e4c079a994172977d6cb8
+      localIdentifier: trend
+    - items:
+        - attribute:
+            displayForm:
+              identifier:
+                id: repo_name
+                type: label
+            localIdentifier: 9afa361b82f643cf8e7b7249cdfd4392
+      localIdentifier: segment
+  filters: []
+  properties: {}
+  sorts: []
+  version: '2'
+  visualizationUrl: local:line
+description: ''
+id: contribution_of_top_25_users_per_repository
+title: Contribution of TOP 25% users per repository

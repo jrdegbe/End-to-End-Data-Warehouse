@@ -1,0 +1,69 @@
+version: 2
+
+models:
+  - name: repos
+    description: "Repos"
+    meta:
+      gooddata:
+        model_id: github
+    columns:
+      - name: repo_id
+        description: "Repo ID"
+        data_type: "INT"
+        tests:
+          - dbt_constraints.primary_key
+        meta:
+          gooddata:
+            ldm_type: primary_key
+      - name: repo_url
+        data_type: "STRING"
+        description: "Repo URL"
+        meta:
+          gooddata:
+            ldm_type: label
+            label_type: HYPERLINK
+            attribute_column: repo_id
+      - name: repo_name
+        data_type: "STRING"
+        description: "Repo name"
+        meta:
+          gooddata:
+            ldm_type: attribute
+      - name: stargazers_count
+        data_type: "INT"
+        description: "Stargazers count"
+        meta:
+          gooddata:
+            ldm_type: fact
+      - name: watchers_count
+        data_type: "INT"
+        description: "Watches count"
+        meta:
+          gooddata:
+            ldm_type: fact
+      - name: repo_created_at
+        data_type: "TIMESTAMP"
+        description: "Repository created at"
+        meta:
+          gooddata:
+            ldm_type: date
+
+# TODO - remove it. dbt metrics are going to be deprecated by dbt, we deprecated it in dbt-gooddata too
+metrics:
+  - name: sum_stargazers
+    label: Sum of stargazers
+    description: Sum of stargazers
+    model: ref('repos')
+    tags:
+      - "Metrics dbt"
+    meta:
+      gooddata:
+        model_id: github
+        format: "#,##0"
+
+    calculation_method: sum
+    expression: stargazers_count
+
+    timestamp: repo_created_at
+    time_grains: [day, week, month, quarter, year]
+

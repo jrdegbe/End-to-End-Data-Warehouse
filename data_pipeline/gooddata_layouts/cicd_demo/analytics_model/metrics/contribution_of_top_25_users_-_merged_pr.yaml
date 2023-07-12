@@ -1,0 +1,10 @@
+content:
+  format: '#,##0.00%'
+  maql: "SELECT SUM(\n    SELECT {metric/count_merged_pull_requests}\n      BY {label/user_id}\n\
+    \      WHERE TOP(25%) OF ({metric/count_merged_pull_requests})\n      WITHIN(ALL\
+    \ {label/user_id}))\n  / {metric/count_merged_pull_requests}\n"
+description: ''
+id: contribution_of_top_25_users_-_merged_pr
+tags:
+  - Complex metrics
+title: Contribution of TOP 25% users - merged PR

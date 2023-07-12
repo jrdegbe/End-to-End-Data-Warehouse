@@ -1,0 +1,80 @@
+version: 2
+
+models:
+  - name: flights
+    meta:
+      gooddata:
+        model_id: faa
+    columns:
+      - name: id2
+        tests:
+          - dbt_constraints.primary_key
+        meta:
+          gooddata:
+            ldm_type: primary_key
+      - name: carrier
+        tests:
+          - dbt_constraints.foreign_key:
+              pk_table_name: ref('carriers')
+              pk_column_name: code
+        meta:
+          gooddata:
+            ldm_type: reference
+            referenced_table: carriers
+      - name: origin
+        tests:
+          - dbt_constraints.foreign_key:
+              pk_table_name: ref('airports')
+              pk_column_name: code
+        meta:
+          gooddata:
+            ldm_type: reference
+            referenced_table: airports
+      - name: destination
+# Corrupted input data, e.g. destination SCE does not exists in airports!
+#        tests:
+#          - dbt_constraints.foreign_key:
+#              pk_table_name: ref('airports')
+#              pk_column_name: code
+        meta:
+          gooddata:
+            ldm_type: reference
+            referenced_table: airports
+      - name: tail_num
+        tests:
+          - dbt_constraints.foreign_key:
+              pk_table_name: ref('aircraft')
+              pk_column_name: tail_num
+        meta:
+          gooddata:
+            ldm_type: reference
+            referenced_table: aircraft
+      - name: cancelled
+      - name: diverted
+      - name: flight_num
+      - name: arr_delay
+        meta:
+          gooddata:
+            ldm_type: fact
+      - name: dep_delay
+        meta:
+          gooddata:
+            ldm_type: fact
+      - name: distance
+        meta:
+          gooddata:
+            ldm_type: fact
+      - name: flight_time
+        meta:
+          gooddata:
+            ldm_type: fact
+      - name: taxi_in
+        meta:
+          gooddata:
+            ldm_type: fact
+      - name: taxi_out
+        meta:
+          gooddata:
+            ldm_type: fact
+      - name: dep_time
+        description: "Departure time"

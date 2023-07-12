@@ -1,0 +1,21 @@
+ARG PYTHON_VERSION=3.10
+ARG DBT_VERSION=1.4.1
+ARG DBT_IMAGE=ghcr.io/dbt-labs/dbt-core:$DBT_VERSION
+ARG SRC_DATA_PIPELINE=data_pipeline
+FROM $DBT_IMAGE
+
+ARG IMAGES_WORKDIR=/project
+WORKDIR ${IMAGES_WORKDIR}
+
+ARG SRC_DATA_PIPELINE
+COPY ${SRC_DATA_PIPELINE}/requirements-dbt.txt requirements-dbt.txt
+RUN pip3 install -r requirements-dbt.txt
+
+COPY ${SRC_DATA_PIPELINE}/requirements-gooddata.txt requirements-gooddata.txt
+RUN pip3 install -r requirements-gooddata.txt
+
+COPY ${SRC_DATA_PIPELINE}/packages.yml packages.yml
+COPY ${SRC_DATA_PIPELINE}/dbt_project.yml dbt_project.yml
+RUN dbt deps
+
+ENTRYPOINT ["dbt"]

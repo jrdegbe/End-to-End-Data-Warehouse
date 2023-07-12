@@ -1,0 +1,34 @@
+environment_setups:
+  - id: default
+    environments:
+      - id: development
+        name: Development
+        elt_environment: cicd_dev
+      - id: staging
+        name: Staging
+        elt_environment: cicd_staging
+      - id: staging_vertica
+        name: Staging(Vertica)
+        elt_environment: cicd_staging_vertica
+      - id: production
+        name: Production
+        elt_environment: cicd_prod
+
+data_products:
+  - id: cicd_demo
+    name: CICD demo
+    environment_setup_id: default
+    model_ids:
+      - github
+  - id: faa
+    name: Federal Aviation Administration
+    environment_setup_id: default
+    model_ids:
+      - faa
+    localization:
+      from_language: en
+      to:
+        - locale: fr-FR
+          language: fr
+        - locale: zh-Hans
+          language: "chinese (simplified)"
