@@ -29,17 +29,6 @@ Generally, you can change the whole data pipeline and UI apps by a single commit
 ## If you need help
 This README is just a brief how-to, it does not contain all details. If you need help, do not hesitate to ask in our [Slack community](https://www.gooddata.com/slack/).
 
-## Authors
-- [Jan Soubusta](https://twitter.com/jaceksan)
-- [Patrik Braborec](https://twitter.com/patrikbraborec)
-
-## Related articles
-The following articles are based on this project:
-- [How To Build a Modern Data Pipeline](https://medium.com/gooddata-developers/how-to-build-a-modern-data-pipeline-cfdd9d14fbea)
-- [How GoodData Integrates With dbt](https://medium.com/gooddata-developers/how-gooddata-integrates-with-dbt-a0c6f207eca3)
-- [Extending CI/CD data pipeline with Meltano](https://medium.com/gooddata-developers/extending-ci-cd-data-pipeline-with-meltano-7de3bce74f57)
-- [Analytics Inside Virtual Reality: Too Soon?](https://medium.com/gooddata-developers/analytics-inside-virtual-reality-too-soon-41900dac366b)
-- [Streamlit meets Headless BI](https://medium.com/gooddata-developers/streamlit-meets-headless-bi-cb6196b69671)
 
 ## Getting Started
 I recommend to begin on your localhost, starting the whole ecosystem using [docker-compose.yaml](docker-compose.yaml) file.
@@ -242,14 +231,6 @@ python upload_mapbox_token.py -gw faa_development_chinese__simplified_
 
 Applications are stored in [apps](apps/) folder. They are not delivered by the Gitlab pipeline, but by render.com service watching this repo.
 
-### VR demo
-[README](apps/vr_analytics/)
-
-### Streamlit demo
-[README](apps/streamlit/)
 
 ---
 
-If you want to learn more about the stack described in the document, do not hesitate to contact us.
-
-If you find a bug, please [create a merge request](https://gitlab.com/patrikbraborec/gooddata-data-pipeline/-/merge_requests/new), or [create an issue](https://gitlab.com/patrikbraborec/gooddata-data-pipeline/-/issues/new).
